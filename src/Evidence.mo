@@ -64,10 +64,10 @@ module {
     func next_chunk_index(args : T.CommitBatchArguments, operation_index : Nat, chunk_index : Nat, sha256 : Sha256.Digest, chunks : Map<T.ChunkId, T.StoredChunk>) : T.EvidenceComputation {
         let operation = args.operations[operation_index];
         switch (get_opt(args.operations, operation_index)) {
-            case (? #SetAssetContent(asset_content)) switch (get_opt(asset_content.chunk_ids, chunk_index)) {
+            case (?#SetAssetContent(asset_content)) switch (get_opt(asset_content.chunk_ids, chunk_index)) {
                 case (?chunk_id) {
                     switch (Map.get(chunks, nhash, chunk_id)) {
-                        case (?chunk) { sha256.writeArray(chunk.content) };
+                        case (?chunk) { sha256.writeBlob(chunk.content) };
                         case (_) {};
                     };
 
@@ -262,7 +262,7 @@ module {
                 let hash = sha256.sum();
                 #Computed(hash);
             };
-            case (? #CreateAsset(args)) {
+            case (?#CreateAsset(args)) {
                 hash_create_asset(sha256, args);
                 let hasher_state = sha256.share();
 
@@ -271,7 +271,7 @@ module {
                     hasher_state;
                 };
             };
-            case (? #SetAssetContent(args)) {
+            case (?#SetAssetContent(args)) {
                 hash_set_asset_content(sha256, args);
                 let hasher_state = sha256.share();
 
@@ -281,7 +281,7 @@ module {
                     hasher_state;
                 };
             };
-            case (? #UnsetAssetContent(args)) {
+            case (?#UnsetAssetContent(args)) {
                 hash_unset_asset_content(sha256, args);
                 let hasher_state = sha256.share();
                 #NextOperation {
@@ -289,7 +289,7 @@ module {
                     hasher_state;
                 };
             };
-            case (? #DeleteAsset(args)) {
+            case (?#DeleteAsset(args)) {
                 hash_delete_asset(sha256, args);
                 let hasher_state = sha256.share();
                 #NextOperation {
@@ -297,7 +297,7 @@ module {
                     hasher_state;
                 };
             };
-            case (? #Clear(args)) {
+            case (?#Clear(args)) {
                 hash_clear(sha256, args);
                 let hasher_state = sha256.share();
                 #NextOperation {
@@ -305,7 +305,7 @@ module {
                     hasher_state;
                 };
             };
-            case (? #SetAssetProperties(args)) {
+            case (?#SetAssetProperties(args)) {
                 hash_set_asset_properties(sha256, args);
                 let hasher_state = sha256.share();
                 #NextOperation {

@@ -6,10 +6,8 @@ import Map "mo:map/Map";
 import CertifiedAssets "mo:certified-assets/Stable";
 import SHA256 "mo:sha2/Sha256";
 import Vector "mo:vector";
-import Versions "Versions"
 
 module {
-    public type VersionedStableStore = Versions.VersionedStableStore;
 
     type Map<K, V> = Map.Map<K, V>;
     type Set<V> = Set.Set<V>;
@@ -359,7 +357,7 @@ module {
         var next_chunk_id : ChunkId;
 
         batches : Map<BatchId, Batch>;
-        copy_on_write_batches : Map<BatchId, [(Text, ?Asset)]>; // for atomicity - if commit fails, revert to previous state
+        copy_on_write_batches : Map<BatchId, [(Text, ?Asset)]>; // for atomicity - if commit fails, revert to this
         var next_batch_id : BatchId;
 
         // permissions

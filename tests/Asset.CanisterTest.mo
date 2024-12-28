@@ -35,9 +35,9 @@ shared ({ caller = owner }) actor class () = this_canister {
 
     // Set up the assets library
     let assets_sstore = Assets.init_stable_store(canister_id, owner);
-    let #v0_1_0(assets_internal) = assets_sstore;
+    let #v0_2_0(assets_internal) = assets_sstore else Debug.trap("Failed to extract stable store state with version #v0_2_0");
 
-    let assets = Assets.Assets(assets_sstore);
+    let assets = Assets.Assets(assets_sstore, null);
     assets.set_canister_id(canister_id);
 
     public query func http_request_streaming_callback(
@@ -796,7 +796,6 @@ shared ({ caller = owner }) actor class () = this_canister {
         },
     );
 
- // todo- implement
     suite.add(
         "get asset with aliasing",
        func({ ts_assert; ts_print; ts_assert_or_print } : CanisterTests.TestTools) : async () {  
@@ -1102,7 +1101,7 @@ shared ({ caller = owner }) actor class () = this_canister {
 
             ts_assert(
                 Map.get(assets_internal.chunks, nhash, chunk_ids.get(0)) == ?{
-                    content = Blob.toArray(chunk_1);
+                    content = chunk_1;
                     batch_id;
                 }
             );
@@ -1119,7 +1118,7 @@ shared ({ caller = owner }) actor class () = this_canister {
 
             ts_assert(
                 Map.get(assets_internal.chunks, nhash, chunk_ids.get(1)) == ?{
-                    content = Blob.toArray(chunk_2);
+                    content = chunk_2;
                     batch_id;
                 }
             );
@@ -2016,9 +2015,6 @@ shared ({ caller = owner }) actor class () = this_canister {
     suite.add(
         "create and store a large asset - 256MB",
         func ({ ts_assert; ts_print; ts_assert_or_print } : CanisterTests.TestTools) : async () { 
-            // create a batch with a single asset that is 1GB in size
-            // verify that the asset is created correctly
-            // verify each chunk
 
             let batch_id = switch (assets.create_batch(committer, {})) {
                 case (#ok({ batch_id })) batch_id;

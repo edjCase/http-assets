@@ -36,11 +36,11 @@ suite(
                 let encoding = AssetUtils.create_new_asset_encoding();
 
                 encoding.content_chunks := [
-                    [0, 1, 2, 3],
-                    [4],
-                    [5, 6, 7],
-                    [],
-                    [8, 9],
+                    "\00\01\02\03",
+                    "\04",
+                    "\05\06\07",
+                    "",
+                    "\08\09",
                 ];
                 encoding.content_chunks_prefix_sum := [4, 5, 8, 8, 10];
 

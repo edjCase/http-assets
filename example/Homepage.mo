@@ -77,7 +77,7 @@ module {
                     document.querySelector('.upload-button').addEventListener('click', uploadFiles);
 
                     const MAX_CHUNK_SIZE = 1_887_436; // should be 2mb but is 1.8mb to account for the additional data in the request like the method, headers, query params, etc.
-                    const BATCH_SIZE = 10;
+                    const BATCH_SIZE = 3;
 
                      function get_selected_encoding() {
                         const fieldset = document.querySelector('.encoding-fieldset');
@@ -199,7 +199,7 @@ module {
                                 .catch(response => alert('Error:', response));
                             };
 
-                            // window.location.reload()
+                            window.location.reload()
 
                         } else {
                             alert('Please select a file or directory to upload.');
@@ -213,7 +213,7 @@ module {
                         .then(response => response.text())
                         .then(data => {
                             console.log('Success:', data);
-                            // window.location.reload()
+                            window.location.reload()
                         })
                         .catch(response => {
                             console.response('Error:', response);

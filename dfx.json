@@ -3,13 +3,7 @@
   "canisters": {
     "example": {
       "type": "motoko",
-      "main": "example/main.mo",
-      "args": "--enhanced-orthogonal-persistence"
-    },
-    "example-2": {
-      "type": "motoko",
-      "main": "example/main.mo",
-      "args": "--enhanced-orthogonal-persistence"
+      "main": "example/main.mo"
     },
     "canister-tests": {
       "type": "motoko",

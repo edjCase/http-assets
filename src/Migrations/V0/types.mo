@@ -366,7 +366,7 @@ module V0 {
 
     public type CreateBatchArguments = {};
 
-    public type CanisterInterface = actor {
+    public type AssetsInterface = actor {
         // init : shared () -> async ();
         api_version : shared query () -> async (Nat16);
 
@@ -435,5 +435,5 @@ module V0 {
 
     };
 
-    public type Service = (args : CanisterArgs) -> async CanisterInterface;
+    public type Service = (args : CanisterArgs) -> async AssetsInterface;
 };

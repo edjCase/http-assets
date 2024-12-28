@@ -7,16 +7,24 @@ import Debug "mo:base/Debug";
 import Assets "../src";
 import AssetsCanister "../src/Canister";
 
-actor {
+shared ({ caller = owner }) actor class () = this_canister {
 
-    // will fail unless create_assets_canister() is called first
+    let canister_id = Principal.fromActor(this_canister);
     stable var assets : AssetsCanister.AssetsCanister = actor ("aaaaa-aa");
 
-    public shared func create_assets_canister() : async () {
+    public shared ({ caller }) func create_assets_canister() : async () {
         if (
             Principal.toText(Principal.fromActor(assets)) == "aaaaa-aa"
         ) {
-            assets := await AssetsCanister.AssetsCanister(#Init({}));
+            assets := await AssetsCanister.AssetsCanister(
+                #Upgrade({
+                    set_permissions = ?({
+                        prepare = [];
+                        commit = [owner, canister_id];
+                        manage_permissions = [];
+                    });
+                })
+            );
         };
     };
 

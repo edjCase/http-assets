@@ -7,7 +7,7 @@ import CertifiedAssets "mo:certified-assets/Stable";
 import SHA256 "mo:sha2/Sha256";
 import Vector "mo:vector";
 
-module V0_1_0_Types {
+module {
 
     type Map<K, V> = Map.Map<K, V>;
     type Set<V> = Set.Set<V>;
@@ -394,7 +394,7 @@ module V0_1_0_Types {
 
     public type CreateBatchArguments = {};
 
-    public type CanisterInterface = actor {
+    public type AssetsInterface = actor {
         // init : shared () -> async ();
         api_version : shared query () -> async (Nat16);
 
@@ -462,5 +462,5 @@ module V0_1_0_Types {
 
     };
 
-    public type Service = (args : CanisterArgs) -> async CanisterInterface;
+    public type Service = (args : CanisterArgs) -> async AssetsInterface;
 };

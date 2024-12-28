@@ -61,7 +61,7 @@ shared ({ caller = owner }) actor class AssetsCanister(canister_args : T.Caniste
     public type HttpResponse = T.HttpResponse;
     public type Service = T.Service;
     public type CanisterArgs = T.CanisterArgs;
-    public type CanisterInterface = T.CanisterInterface;
+    public type AssetsInterface = T.AssetsInterface;
 
     type Result<A, B> = Result.Result<A, B>;
 
@@ -70,7 +70,12 @@ shared ({ caller = owner }) actor class AssetsCanister(canister_args : T.Caniste
     stable let assets_sstore_1 = Assets.init_stable_store(canister_id, owner);
     stable let assets_sstore_2 = Assets.upgrade(assets_sstore_1);
 
-    let assets = Assets.Assets(assets_sstore_2);
+    let opt_set_permissions = switch (canister_args) {
+        case (#Init(init_args)) null;
+        case (#Upgrade(upgrade_args)) upgrade_args.set_permissions;
+    };
+
+    let assets = Assets.Assets(assets_sstore_2, opt_set_permissions);
 
     public query func http_request_streaming_callback(token : T.StreamingToken) : async (T.StreamingCallbackResponse) {
         assets.http_request_streaming_callback(token);

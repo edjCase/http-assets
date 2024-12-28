@@ -72,7 +72,7 @@ module {
     public type HttpResponse = T.HttpResponse;
     public type Service = T.Service;
     public type CanisterArgs = T.CanisterArgs;
-    public type CanisterInterface = T.CanisterInterface;
+    public type AssetsInterface = T.AssetsInterface;
     public type CreateChunksArguments = T.CreateChunksArguments;
     public type CreateChunksResponse = T.CreateChunksResponse;
     public type EndpointRecord = T.EndpointRecord;
@@ -98,6 +98,10 @@ module {
 
     public func upgrade(asset_versions : VersionedStableStore) : VersionedStableStore {
         Migrations.upgrade(asset_versions);
+    };
+
+    public func empty_stable_store() : VersionedStableStore {
+        Debug.trap("Assets.empty(): This method should not be called. It should only be used to set the type of a stable store that has already been initialized.");
     };
 
     public func div_ceiling(a : Nat, b : Nat) : Nat {
@@ -137,8 +141,23 @@ module {
         await* AssetUtils.hash_blob_chunks(chunks, null);
     };
 
-    public class Assets(sstore : VersionedStableStore) {
+    public class Assets(sstore : VersionedStableStore, opt_set_permissions : ?T.SetPermissions) {
         let state = Migrations.get_current_state(sstore);
+
+        switch (opt_set_permissions) {
+            case (?set_permissions) {
+                for (principal in set_permissions.prepare.vals()) {
+                    AssetUtils.grant_permission(state, principal, #Prepare);
+                };
+                for (principal in set_permissions.commit.vals()) {
+                    AssetUtils.grant_permission(state, principal, #Commit);
+                };
+                for (principal in set_permissions.manage_permissions.vals()) {
+                    AssetUtils.grant_permission(state, principal, #ManagePermissions);
+                };
+            };
+            case (null) {};
+        };
 
         public func api_version() : Nat16 = BaseAssets.api_version();
 

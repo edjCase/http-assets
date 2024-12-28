@@ -4,7 +4,7 @@
 
 A Motoko library implementation of the [Assets Canister](https://github.com/dfinity/sdk/blob/master/docs/design/asset-canister-interface.md) with v2 certification. It allows you to serve files from a canister and access them via the `<canister-id>.icp0.io` domain instead of the `<canister-id>.raw.ic0.io` domain.
 
-**Demo:** [A simple frontend for uploading and serving certified files](https://qz3kc-eaaaa-aaaap-anu3q-cai.icp0.io/homepage.html)
+**Demo:** [A simple frontend for uploading and serving certified files](https://zus34-xqaaa-aaaap-anvkq-cai.icp0.io/homepage)
 
 > The code for the demo is in the [example/main.mo](./example/main.mo) file.
 
@@ -17,8 +17,6 @@ This is the documentation for the assets canister implemented in Rust by the Dfi
 - [Asset Canister Interface](asset-canister-interface.md)
 
 ### Initialization and Configuration
-
-<!-- You can either import the library into your canister or deploy it as a standalone canister. -->
 
 #### Importing the Library
 
@@ -33,7 +31,7 @@ This is the documentation for the assets canister implemented in Rust by the Dfi
         let canister_id  = Principal.fromActor(this_canister);
 
         stable let assets_sstore_1 = Assets.init_stable_store(canister_id, owner);
-        let assets = Assets.Assets(assets_sstore_1);
+        let assets = Assets.Assets(assets_sstore_1, null);
 
         public query func http_request_streaming_callback(token : Assets.StreamingToken) : async ?(Assets.StreamingCallbackResponse) {
             ?assets.http_request_streaming_callback(token);
@@ -49,109 +47,6 @@ This is the documentation for the assets canister implemented in Rust by the Dfi
 
 - The `init_stable_store` function initializes the stable heap store for the assets library so it's persistent across canister upgrades. It takes the `canister_id` and `owner` as arguments and grants them **#Commit** permission access.
 - The `http_request_streaming_callback` function is a callback function that the assets library uses to stream files larger than the `2MB` transfer limit to the client. You need to expose this function as a public function in your canister and pass it to the assets library.
-
-<!--
-#### Deploying as a standalone canister
-
-- **Deploying with dfx**
-
-```bash
-    git clone https://github.com/NatLabs/ic-assets
-    cd ic-assets
-    dfx start --background
-    dfx deploy assets_canister
-```
-
-> This command will deploy to the local network. To deploy on the mainnet you need to add `--network ic` to the deploy command
-
-- **Deploying from a canister**
-
-```motoko
-    import Text "mo:base/Text";
-    import Option "mo:base/Option";
-    import Cycles "mo:base/ExperimentalCycles";
-    import Principal "mo:base/Principal";
-
-    import Assets "mo:ic-assets";
-    import AssetsCanister "mo:ic-assets/Canister";
-
-    actor {
-
-        stable var assets : Assets.AssetsCanister = actor ("aaaaa-aa"); // dummy value
-
-        public shared func create_assets_canister() : async () {
-            if (
-                Principal.toText(Principal.fromActor(assets)) == "aaaaa-aa"
-            ) {
-                Cycles.add(1_000_000_000_000);
-                assets := await AssetsCanister.AssetsCanister(canister_id);
-            };
-        };
-
-    }
-```
-
-Once you've deployed the assets canister using either of these methods you can retrieve it's canister_id and reference it in your canister.
-
-```motoko
-
-    stable let assets : Assets.AssetsCanister = actor ("<asset-canister-id>");
-```
-
-Once you have the asset canister reference you can call all the methods listed in the asset interface, like storing and retrieving assets.
-
-```motoko
-    public shared func store_hello_world_file() : async () {
-          let args = AssetsCanister.StoreArgs {
-              key = "/assets/hello.txt";
-              content_type = "text/plain";
-              content = "Hello, World!";
-              sha256 = null;
-              content_encoding = "identity";
-              is_aliased = ?true;
-          };
-
-          await assets.store(args);
-
-    };
-
-    public func get_hello_world_file() : async Blob {
-        let args = AssetsCanister.GetArgs {
-            key = "/assets/hello.txt";
-            content_encoding = "identity";
-        };
-
-        let response = await assets.get(args);
-
-        response.content;
-    };
-
-```
-
-**Accessing assets via http requests**
-To access the assets in the assets canister from a http request, you need to redirect the request to the assets canister.
-
-```motoko
-
-    public query func http_request(request : Assets.HttpRequest) : async Assets.HttpResponse {
-
-        let assets_canister_id = Principal.toText(Principal.fromActor(assets));
-
-        let asset_url = assets_canister_id # ".icp0.io/" # request.url;
-
-        let http_response = {
-            status_code = 307;
-            headers = [("Location", asset_url)];
-            body = "";
-            upgrade = null;
-            streaming_strategy = null;
-        };
-
-        return http_response;
-
-    };
-
-``` -->
 
 ## Differences from the Rust Implementation
 

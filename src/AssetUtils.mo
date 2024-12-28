@@ -170,7 +170,7 @@ module {
 
     public func certify_encoding(self : StableStore, asset_key : Text, asset : Assets, encoding_name : Text) : Result<(), Text> {
 
-        Debug.print("Certify encoding called on " # asset_key # " with encoding " # encoding_name);
+        // Debug.print("Certify encoding called on " # asset_key # " with encoding " # encoding_name);
 
         let ?encoding = Map.get(asset.encodings, thash, encoding_name) else return #err(ErrorMessages.encoding_not_found(asset_key, encoding_name));
 
@@ -346,7 +346,7 @@ module {
         let encoding = Utils.map_get_or_put(asset.encodings, thash, args.content_encoding, func() : T.AssetEncoding = create_new_asset_encoding());
 
         encoding.modified := Time.now();
-        encoding.content_chunks := [Blob.toArray(args.content)];
+        encoding.content_chunks := [args.content];
         encoding.content_chunks_prefix_sum := [args.content.size()];
         encoding.total_length := args.content.size();
         encoding.certified := false;
@@ -536,6 +536,8 @@ module {
         var current_chunk_index = left_chunk_index;
         var nested_index = left_chunk_nested_start_index;
 
+        var bytes : [Nat8] = Blob.toArray(encoding.content_chunks[current_chunk_index]);
+
         let chunk = Array.tabulate(
             size,
             func(_ : Nat) : Nat8 {
@@ -543,9 +545,10 @@ module {
                 while (nested_index == encoding.content_chunks[current_chunk_index].size()) {
                     current_chunk_index += 1;
                     nested_index := 0;
+                    bytes := (Blob.toArray(encoding.content_chunks[current_chunk_index]));
                 };
 
-                let byte = encoding.content_chunks[current_chunk_index][nested_index];
+                let byte = bytes[nested_index];
                 nested_index += 1;
 
                 byte
@@ -601,12 +604,19 @@ module {
 
     };
 
-    // func check_if_prefix_exists_as_file(self : StableStore, key : Text) : Bool {
-    //     let key_with_html = key # ".html";
-    //     let key_with_index_html = key # "/index.html";
+    func check_if_a_file_exists_for_any_prefix(self : StableStore, key : Text) : ?Text {
 
-    //     Map.has(self.assets, thash, key_with_html) or Map.has(self.assets, thash, key_with_index_html);
-    // };
+        var prefix = "";
+
+        let paths = Text.tokens(key, #text "/");
+
+        for (path in paths) {
+            prefix #= "/" # path;
+            if (Map.has(self.assets, thash, prefix)) return ?prefix;
+        };
+
+        null;
+    };
 
     public func create_asset(self : StableStore, args : T.CreateAssetArguments) : Result<(), Text> {
         let key = format_key(args.key);
@@ -614,6 +624,11 @@ module {
         // Debug.print("Creating asset with key: " # key);
 
         if (Map.has(self.assets, thash, key)) return #err("Assets already exists.");
+
+        switch (check_if_a_file_exists_for_any_prefix(self, key)) {
+            case (?prefix) return #err("Cannot create asset '" # key # "' because an asset already exists for prefix '" # prefix # "'.");
+            case (null) {};
+        };
 
         let asset = create_and_store_new_asset(self.assets, key);
 
@@ -635,17 +650,16 @@ module {
     };
 
     public func hash_blob_chunks(content_chunks : [Blob], opt_prefix_sum_array_of_chunk_sizes : ?[Nat]) : async* Blob {
-        let content_chunks_bytes = Array.map(content_chunks, Blob.toArray);
-        await* hash_chunks(content_chunks_bytes, opt_prefix_sum_array_of_chunk_sizes);
+        await* hash_chunks(content_chunks, opt_prefix_sum_array_of_chunk_sizes);
     };
 
-    func hash_bytes(sha256 : Sha256.Digest, chunks : Iter.Iter<[Nat8]>) : async () {
+    func hash_bytes(sha256 : Sha256.Digest, chunks : Iter.Iter<Blob>) : async () {
         for (content in chunks) {
-            sha256.writeArray(content);
+            sha256.writeBlob(content);
         };
     };
 
-    public func hash_chunks(content_chunks : [[Nat8]], opt_prefix_sum_array_of_chunk_sizes : ?[Nat]) : async* Blob {
+    public func hash_chunks(content_chunks : [Blob], opt_prefix_sum_array_of_chunk_sizes : ?[Nat]) : async* Blob {
         // need to make multiple async calls to hash the content
         // to bypass the 40B instruction limit
 
@@ -690,7 +704,7 @@ module {
         var prev_chunk_index = 0;
         let hashable_chunks_per_call = Iter.map(
             buffer.vals(),
-            func(end_index : Nat) : Iter.Iter<[Nat8]> {
+            func(end_index : Nat) : Iter.Iter<Blob> {
                 let slice = Itertools.fromArraySlice(content_chunks, prev_chunk_index, end_index);
                 prev_chunk_index := end_index;
                 slice;
@@ -724,9 +738,9 @@ module {
 
         var error_msg : ?Text = null;
 
-        let content_chunks : [[Nat8]] = Array.tabulate(
+        let content_chunks : [Blob] = Array.tabulate(
             args.chunk_ids.size(),
-            func(i : Nat) : [Nat8] {
+            func(i : Nat) : Blob {
                 let chunk_id = args.chunk_ids[i];
                 switch (Map.get(self.chunks, nhash, chunk_id)) {
                     case (?chunk) {
@@ -735,7 +749,7 @@ module {
                     };
                     case (null) {
                         error_msg := ?("Chunk with id " # debug_show chunk_id # " not found.");
-                        [];
+                        ("" : Blob);
                     };
                 };
             },
@@ -894,7 +908,7 @@ module {
         #ok();
     };
 
-    public let BATCH_EXPIRY_NANOS : Nat = 300_000_000_000;
+    public let BATCH_EXPIRY_NANOS : Nat = 86_400_000_000; // 1 day
 
     func create_new_batch() : Batch {
         {
@@ -925,7 +939,7 @@ module {
         };
 
         switch (batch_with_commit_args_exists) {
-            case (?(batch_id, ? #Computed(_))) {
+            case (?(batch_id, ?#Computed(_))) {
                 return #err("Batch " # debug_show # batch_id # " is already proposed.  Delete or execute it to propose another.");
             };
             case (?(batch_id, _)) {
@@ -996,7 +1010,7 @@ module {
 
         let chunk = {
             batch_id = args.batch_id;
-            content = Blob.toArray(args.content);
+            content = args.content;
         };
 
         ignore Map.put(self.chunks, nhash, chunk_id, chunk);
@@ -1315,9 +1329,8 @@ module {
             case (_) {};
         };
 
-        if (encoding_name != "identity") {
-            ignore Map.put(headers, thash, "content-encoding", encoding_name);
-        };
+        ignore Map.put(headers, thash, "content-encoding", encoding_name);
+        ignore Map.put(headers, thash, "vary", "accept-encoding");
 
         let hex = Hex.encode(Blob.toArray(encoding_sha256));
         let etag_value = "\"" # hex # "\"";
