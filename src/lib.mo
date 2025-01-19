@@ -1,18 +1,23 @@
-import Debug "mo:base/Debug";
 import Result "mo:base/Result";
-import Array "mo:base/Array";
 import Text "mo:base/Text";
 import Time "mo:base/Time";
 import Iter "mo:base/Iter";
+import Blob "mo:base/Blob";
+import Array "mo:base/Array";
+import Principal "mo:base/Principal";
 
 import { URL; Headers } "mo:http-parser";
 import Map "mo:map/Map";
 import CertifiedAssets "mo:certified-assets/Stable";
+import Itertools "mo:itertools/Iter";
 
-import T "Types";
-import BaseAssets "BaseAssets";
+import T "BaseAssets/Types";
+import BaseAssets "BaseAssets/lib";
+import Permissions "BaseAssets/Permissions";
+import AssetUtils "BaseAssets/AssetUtils";
+import Const "BaseAssets/Const";
 import Migrations "Migrations";
-import AssetUtils "AssetUtils";
+import Versions "BaseAssets/Versions";
 
 module {
 
@@ -24,6 +29,8 @@ module {
     public type BatchId = T.BatchId;
     public type ChunkId = T.ChunkId;
     public type Time = Time.Time;
+
+    public type Asset = T.Asset;
 
     public type CreateAssetArguments = T.CreateAssetArguments;
     public type SetAssetContentArguments = T.SetAssetContentArguments;
@@ -77,17 +84,17 @@ module {
     public type CreateChunksResponse = T.CreateChunksResponse;
     public type EndpointRecord = T.EndpointRecord;
 
-    public type VersionedStableStore = T.VersionedStableStore;
+    public type VersionedStableStore = Versions.VersionedStableStore;
     type StableStore = T.StableStore;
 
-    public let MAX_CHUNK_SIZE = BaseAssets.MAX_CHUNK_SIZE;
+    public let MAX_CHUNK_SIZE = Const.MAX_CHUNK_SIZE;
 
-    public func from_version(versions : T.VersionedStableStore) : StableStore {
-        let upgraded_store = Migrations.upgrade(versions);
+    public func from_version(versions : VersionedStableStore) : StableStore {
+        let upgraded_store = Migrations.upgrade_stable_store(versions);
         Migrations.get_current_state(upgraded_store);
     };
 
-    public func share_version(self : StableStore) : T.VersionedStableStore {
+    public func share_version(self : StableStore) : VersionedStableStore {
         Migrations.share_version(self);
     };
 
@@ -96,12 +103,8 @@ module {
         share_version(stable_store_v0);
     };
 
-    public func upgrade(asset_versions : VersionedStableStore) : VersionedStableStore {
-        Migrations.upgrade(asset_versions);
-    };
-
-    public func empty_stable_store() : VersionedStableStore {
-        Debug.trap("Assets.empty(): This method should not be called. It should only be used to set the type of a stable store that has already been initialized.");
+    public func upgrade_stable_store(asset_versions : VersionedStableStore) : VersionedStableStore {
+        Migrations.upgrade_stable_store(asset_versions);
     };
 
     public func div_ceiling(a : Nat, b : Nat) : Nat {
@@ -112,34 +115,55 @@ module {
         div_ceiling(bytes, MAX_CHUNK_SIZE);
     };
 
-    //! todo: implement
-    public func split_into_chunks(blob : Blob) : [Blob] { [] };
+    public func split_into_chunks(blob : Blob) : [Blob] {
+        let bytes = Blob.toArray(blob);
+
+        Iter.toArray(
+            Iter.map(
+                Itertools.chunks(bytes.vals(), MAX_CHUNK_SIZE),
+                func(chunk : [Nat8]) : Blob {
+                    Blob.fromArray(chunk);
+                },
+            )
+        );
+
+    };
 
     public func num_chunks(total_length : Nat) : Nat {
         div_ceiling(total_length, MAX_CHUNK_SIZE);
     };
 
-    public func redirect_to(assets : Assets, prev_http_request : T.HttpRequest, path : Text, headers : [(Text, Text)]) : T.HttpResponse {
-        let canister_id = assets.get_canister_id();
-
-        let url = URL(prev_http_request.url, Headers(prev_http_request.headers));
-
-        let new_location = url.protocol # "://" # url.host.original # ":" # Text.replace(debug_show url.port, #text("_"), "") # path # "?" # url.queryObj.original;
-        Debug.print("Redirecting to: " # new_location);
-
-        {
-            status_code = 308; // Permanent Redirect
-            headers = Array.append([("Location", new_location)], headers);
-            body = "";
-            upgrade = null;
-            streaming_strategy = null;
-        };
-
-    };
-
     public func hash_chunks(chunks : [Blob]) : async* Blob {
         await* AssetUtils.hash_blob_chunks(chunks, null);
     };
+
+    //! Fails because redirect request needs to be certified as well
+    // public func redirect_to(
+    //     prev_http_request : T.HttpRequest,
+    //     prev_canister_id : Principal,
+    //     new_canister_id : Principal,
+    // ) : T.HttpResponse {
+
+    //     let url = URL(prev_http_request.url, Headers(prev_http_request.headers));
+
+    //     let protocol = if (Text.contains(url.protocol, #text "localhost")) {
+    //         "http";
+    //     } else {
+    //         "https";
+    //     };
+
+    //     var new_location = protocol # "://" # url.host.original # url.path.original # "?" # url.queryObj.original;
+    //     new_location := Text.replace(new_location, #text(Principal.toText(prev_canister_id)), Principal.toText(new_canister_id));
+
+    //     {
+    //         status_code = 308; // Permanent Redirect
+    //         headers = [("Location", new_location)];
+    //         body = "";
+    //         upgrade = null;
+    //         streaming_strategy = null;
+    //     };
+
+    // };
 
     public class Assets(sstore : VersionedStableStore, opt_set_permissions : ?T.SetPermissions) {
         let state = Migrations.get_current_state(sstore);
@@ -147,13 +171,13 @@ module {
         switch (opt_set_permissions) {
             case (?set_permissions) {
                 for (principal in set_permissions.prepare.vals()) {
-                    AssetUtils.grant_permission(state, principal, #Prepare);
+                    Permissions.grant_permission(state.permissions, principal, #Prepare);
                 };
                 for (principal in set_permissions.commit.vals()) {
-                    AssetUtils.grant_permission(state, principal, #Commit);
+                    Permissions.grant_permission(state.permissions, principal, #Commit);
                 };
                 for (principal in set_permissions.manage_permissions.vals()) {
-                    AssetUtils.grant_permission(state, principal, #ManagePermissions);
+                    Permissions.grant_permission(state.permissions, principal, #Manage);
                 };
             };
             case (null) {};
@@ -187,7 +211,7 @@ module {
         ///
         /// assets.set_streaming_callback(ic_assets_streaming_callback);
         ///
-        public func http_request_streaming_callback(token : StreamingToken) : StreamingCallbackResponse {
+        public func http_request_streaming_callback(token : StreamingToken) : T.Result<StreamingCallbackResponse, Text> {
             BaseAssets.http_request_streaming_callback(state, token);
         };
 
@@ -484,7 +508,7 @@ module {
         };
 
         public func get_certified_endpoints() : [T.EndpointRecord] {
-            Iter.toArray(CertifiedAssets.endpoints(state.certificate_store));
+            Iter.toArray(CertifiedAssets.endpoints(state.fs.certs));
         };
 
     };

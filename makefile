@@ -3,7 +3,10 @@
 MocPath = $(shell mops toolchain bin moc)
 
 test:
-	mops test
+	for file in tests/*.Test.mo; do \
+		base_name=$$(basename "$$file" .Test.mo); \
+		mops test $$base_name; \
+	done
 
 check:
 	find src -type f -name '*.mo' -print0 | xargs -0 $(MocPath) -r $(shell mops sources) -Werror -wasi-system-api

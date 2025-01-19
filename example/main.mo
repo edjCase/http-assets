@@ -40,12 +40,15 @@ shared ({ caller = owner }) actor class () = this_canister {
     let canister_id = Principal.fromActor(this_canister);
     stable var assets_sstore : Any = ();
     stable let assets_sstore_2 : Any = ();
-    stable var assets_sstore_3 = Assets.empty_stable_store();
+    stable var assets_sstore_3 = Assets.init_stable_store(canister_id, owner);
 
     let assets = Assets.Assets(assets_sstore_3, null);
 
     public query func http_request_streaming_callback(token : Assets.StreamingToken) : async (Assets.StreamingCallbackResponse) {
-        assets.http_request_streaming_callback(token);
+        switch (assets.http_request_streaming_callback(token)) {
+            case (#ok(response)) response;
+            case (#err(err)) throw Error.reject(err);
+        };
     };
 
     assets.set_streaming_callback(http_request_streaming_callback);

@@ -199,7 +199,7 @@ module {
 
     public type Permission = {
         #Commit;
-        #ManagePermissions;
+        #Manage;
         #Prepare;
     };
 

@@ -221,6 +221,7 @@ The asset library allows you to update the contents of an asset by using a `#Set
 
 ## Unit Testing
 
+- Install [mops](https://mops.one)
 - Install zx with `npm install -g zx`
 - Install dfinity's [`idl2json` package](https://github.com/dfinity/idl2json?tab=readme-ov-file#with-cargo-install)
 - Run the following commands:

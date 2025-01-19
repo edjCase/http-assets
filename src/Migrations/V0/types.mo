@@ -224,7 +224,7 @@ module V0 {
 
     public type Permission = {
         #Commit;
-        #ManagePermissions;
+        #Manage;
         #Prepare;
     };
 

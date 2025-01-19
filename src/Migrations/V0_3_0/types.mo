@@ -1,20 +1,37 @@
+import Order "mo:base/Order";
 import Result "mo:base/Result";
 import Time "mo:base/Time";
+import Nat64 "mo:base/Nat64";
+import Iter "mo:base/Iter";
+import Buffer "mo:base/Buffer";
 
 import Set "mo:map/Set";
 import Map "mo:map/Map";
 import CertifiedAssets "mo:certified-assets/Stable";
 import SHA256 "mo:sha2/Sha256";
 import Vector "mo:vector";
+import MemoryRegion "mo:memory-region/MemoryRegion";
+import HttpParser "mo:http-parser";
 
-module {
+module T {
 
-    type Map<K, V> = Map.Map<K, V>;
-    type Set<V> = Set.Set<V>;
-    type Result<T, E> = Result.Result<T, E>;
-    type Time = Time.Time;
+    public type Map<K, V> = Map.Map<K, V>;
+    public type Iter<T> = Iter.Iter<T>;
+    public type Set<V> = Set.Set<V>;
+    public let { thash; bhash; nhash; phash; ihash } = Map;
+
+    public type Result<T, E> = Result.Result<T, E>;
+    public type Time = Time.Time;
+    public type Order = Order.Order;
+    public type Buffer<V> = Buffer.Buffer<V>;
+    public type MemoryRegion = MemoryRegion.MemoryRegion;
 
     public type EndpointRecord = CertifiedAssets.EndpointRecord;
+    public type Endpoint = CertifiedAssets.Endpoint;
+    public type CertifiedAssets = CertifiedAssets.StableStore;
+
+    public type URL = HttpParser.URL;
+    public type Headers = HttpParser.Headers;
 
     public type Configuration = {
         var max_batches : ?Nat64;
@@ -24,21 +41,11 @@ module {
 
     public type AssetEncoding = {
         var modified : Time;
-        var content_chunks : [[Nat8]];
-        var content_chunks_prefix_sum : [Nat];
+        var content_pointer : SizedPointer;
 
         var total_length : Nat;
         var certified : Bool;
         var sha256 : Blob;
-
-    };
-
-    public type SharedAssetEncoding = {
-        modified : Time;
-        content_chunks : [Blob];
-        total_length : Nat;
-        certified : Bool;
-        sha256 : Blob;
     };
 
     public type Asset = {
@@ -49,15 +56,6 @@ module {
         var max_age : ?Nat64;
         var allow_raw_access : ?Bool;
         var last_certified_encoding : ?Text;
-    };
-
-    public type SharedAsset = {
-        content_type : Text;
-        encodings : [(Text, SharedAssetEncoding)];
-        headers : [(Text, Text)];
-        is_aliased : ?Bool;
-        max_age : ?Nat64;
-        allow_raw_access : ?Bool;
     };
 
     public type BatchOperation = {
@@ -97,6 +95,57 @@ module {
     public type Path = Text;
     public type BatchId = Nat;
     public type ChunkId = Nat;
+
+    public type SizedPointer = (Nat, Nat);
+
+    public type HierarchicalAssets = {
+        #Asset : Asset;
+        #Directory : Map<Text, HierarchicalAssets>;
+    };
+
+    public type Directory = Map<Text, HierarchicalAssets>;
+
+    public type DirectoryContent = {
+        name : Text;
+        is_directory : Bool;
+    };
+
+    public type Upload = {
+        batches : T.Map<T.BatchId, T.Batch>;
+        var next_batch_id : T.BatchId;
+
+        chunks : T.Map<T.ChunkId, T.StoredChunk>; // replaced by tmp_chunks associated with a batch
+        region : T.MemoryRegion;
+        var next_chunk_id : T.ChunkId;
+
+        configuration : Configuration;
+    };
+
+    public type Permissions = {
+        commit_principals : T.Set<Principal>;
+        prepare_principals : T.Set<Principal>;
+        manage_permissions_principals : T.Set<Principal>;
+    };
+
+    public type FileSystem = {
+        root : Directory;
+        region : T.MemoryRegion;
+        certs : T.CertifiedAssets;
+    };
+
+    public type StableStore = {
+
+        var canister_id : Principal;
+        var streaming_callback : ?StreamingCallback;
+
+        /// region shared with FileSystem and Upload modules
+        shared_region : MemoryRegion;
+
+        fs : FileSystem;
+        upload : Upload;
+        permissions : Permissions;
+
+    };
 
     public type CreateAssetArguments = {
         key : Key;
@@ -264,7 +313,7 @@ module {
     };
 
     public type StoredChunk = {
-        content : [Nat8];
+        pointer : SizedPointer;
         batch_id : BatchId;
     };
 
@@ -341,36 +390,6 @@ module {
     public type StreamingCallbackResponseAny = {
         body : Blob;
         token : ?Any;
-    };
-
-    // Migrations
-    public type StableStore = {
-
-        var canister_id : Principal;
-        var streaming_callback : ?StreamingCallback;
-        assets : Map<Key, Asset>;
-        certificate_store : CertifiedAssets.StableStore;
-
-        configuration : Configuration;
-
-        chunks : Map<ChunkId, StoredChunk>;
-        var next_chunk_id : ChunkId;
-
-        batches : Map<BatchId, Batch>;
-        copy_on_write_batches : Map<BatchId, [(Text, ?Asset)]>; // for atomicity - if commit fails, revert to this
-        var next_batch_id : BatchId;
-
-        // permissions
-        commit_principals : Set<Principal>;
-        prepare_principals : Set<Principal>;
-        manage_permissions_principals : Set<Principal>;
-
-    };
-
-    public type SharedInterface = {
-        canister_id : Principal;
-        assets : [(Key, SharedAsset)];
-
     };
 
     public type CreateBatchResponse = {

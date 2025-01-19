@@ -3,11 +3,13 @@
   "canisters": {
     "example": {
       "type": "motoko",
-      "main": "example/main.mo"
+      "main": "example/main.mo",
+      "args": "--max-stable-pages 1638400"
     },
     "canister-tests": {
       "type": "motoko",
-      "main": "tests/Asset.CanisterTest.mo"
+      "main": "tests/Asset.CanisterTest.mo",
+      "args": "--max-stable-pages 1638400"
     },
     "independent-assets": {
       "type": "motoko",
