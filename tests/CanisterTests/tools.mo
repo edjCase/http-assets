@@ -15,11 +15,13 @@ module {
         ts_assert : AssertFn;
         ts_print : PrintFn;
         ts_assert_or_print : AssertOrPrintFn;
+        ts_ok_or_print : ResultOkOrPrintFn;
     };
 
     public type AssertFn = (Bool) -> ();
     public type PrintFn = (Text) -> ();
     public type AssertOrPrintFn = (Bool, Text) -> ();
+    public type ResultOkOrPrintFn = ((Result<Any, Text>, Text) -> ());
 
     public type QueryTestFn = (TestTools) -> ();
     public type UpdateTestFn = (TestTools) -> async ();
@@ -97,7 +99,15 @@ module {
                         test_tools.ts_print(msg);
                     };
                 };
-
+                ts_ok_or_print = func(result : Result<Any, Text>, msg : Text) {
+                    switch (result) {
+                        case (#ok(_)) test_tools.ts_assert(true);
+                        case (#err(err)) {
+                            test_tools.ts_assert(false);
+                            test_tools.ts_print(msg # ": " # debug_show #err(err));
+                        };
+                    };
+                };
             };
 
             test_tools;

@@ -6,6 +6,9 @@ import Blob "mo:base/Blob";
 import Prelude "mo:base/Prelude";
 import Array "mo:base/Array";
 import Buffer "mo:base/Buffer";
+import Text "mo:base/Text";
+import Error "mo:base/Error";
+import HttpParser "mo:http-parser";
 
 import Map "mo:map/Map";
 
@@ -16,6 +19,15 @@ module {
     type Iter<A> = Iter.Iter<A>;
     type Result<T, E> = Result.Result<T, E>;
     type Order = Order.Order;
+
+    public func div_ceiling(a : Nat, b : Nat) : Nat {
+        (a + (b - 1)) / b;
+    };
+
+    public func format_key(key : Text) : Text {
+        let url = HttpParser.URL(key, HttpParser.Headers([]));
+        return "/" # Text.join("/", url.path.array.vals());
+    };
 
     public func map_get_or_put<K, V>(map : Map<K, V>, hash_util : Map.HashUtils<K>, key : K, default : () -> V) : V {
         switch (Map.get(map, hash_util, key)) {
@@ -41,6 +53,20 @@ module {
             case (#err(errMsg)) Debug.trap(errMsg);
         };
     };
+
+    public func throw_if_error(result : Result<Any, Text>) : async* () {
+        switch (result) {
+            case (#ok(_)) return;
+            case (#err(errMsg)) throw Error.reject(errMsg);
+        };
+    };
+
+    // public func extract_or_throw_error<A>(result : Result<A, Text>) : async* A {
+    //     switch (result) {
+    //         case (#ok(val)) return val;
+    //         case (#err(errMsg)) throw Error.reject(errMsg);
+    //     };
+    // };
 
     public func send_error<A, B>(result : Result<A, Text>) : Result<B, Text> {
         switch (result) {

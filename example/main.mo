@@ -21,7 +21,6 @@ import Itertools "mo:itertools/Iter";
 import Assets "../src";
 import { get_fallback_page } "FallbackPage";
 import { homepage } "Homepage";
-import V0 "../src/Migrations/V0/upgrade";
 
 shared ({ caller = owner }) actor class () = this_canister {
 
@@ -39,13 +38,17 @@ shared ({ caller = owner }) actor class () = this_canister {
     let current_uploads : Map<Nat, Map<Text, File>> = Map.new();
 
     let canister_id = Principal.fromActor(this_canister);
-    stable var assets_sstore = Assets.init_stable_store(canister_id, owner);
-    stable let assets_sstore_2 = Assets.upgrade(assets_sstore);
+    stable var assets_sstore : Any = ();
+    stable let assets_sstore_2 : Any = ();
+    stable var assets_sstore_3 = Assets.init_stable_store(canister_id, owner);
 
-    let assets = Assets.Assets(assets_sstore_2);
+    let assets = Assets.Assets(assets_sstore_3, null);
 
     public query func http_request_streaming_callback(token : Assets.StreamingToken) : async (Assets.StreamingCallbackResponse) {
-        assets.http_request_streaming_callback(token);
+        switch (assets.http_request_streaming_callback(token)) {
+            case (#ok(response)) response;
+            case (#err(err)) throw Error.reject(err);
+        };
     };
 
     assets.set_streaming_callback(http_request_streaming_callback);
@@ -226,12 +229,12 @@ shared ({ caller = owner }) actor class () = this_canister {
     public func http_request_update(_request : Assets.HttpRequest) : async Assets.HttpResponse {
         try {
             let url = HttpParser.URL(_request.url, HttpParser.Headers([]));
-            // Debug.print("request after parsing: " # debug_show { url = url.original });
+            Debug.print("request after parsing: " # debug_show { url = url.original });
 
             if (_request.method == "POST" and url.path.array[0] == "upload" and url.path.array.size() == 1) {
                 // Debug.print("new request: creating batch");
                 let batch_id = create_batch();
-                // Debug.print("Create Upload batch: " # debug_show batch_id);
+                Debug.print("Create Upload batch: " # debug_show batch_id);
                 return response(200, debug_show batch_id);
 
             } else if (_request.method == "PUT" and url.path.array[0] == "upload") {
@@ -242,7 +245,7 @@ shared ({ caller = owner }) actor class () = this_canister {
 
                 let ?filename = url.queryObj.get("filename");
 
-                // Debug.print("upload chunks: " # debug_show ({ batch_id; filename; chunk_id }));
+                Debug.print("upload chunks: " # debug_show ({ batch_id; filename; chunk_id }));
 
                 let files_batch = switch (Map.get(current_uploads, nhash, batch_id)) {
                     case (?files_batch) { files_batch };
@@ -253,6 +256,8 @@ shared ({ caller = owner }) actor class () = this_canister {
                     };
                 };
 
+                Debug.print("accessed files_batch");
+
                 let file = switch (Map.get(files_batch, thash, filename)) {
                     case (?file) file;
                     case (null) {
@@ -260,7 +265,7 @@ shared ({ caller = owner }) actor class () = this_canister {
                         let ?content_encoding = url.queryObj.get("content-encoding");
                         let ?total_chunks_text = (url.queryObj.get("total_chunks"));
                         let total_chunks = nat_from_text(total_chunks_text);
-                        // Debug.print(debug_show ({ content_type; content_encoding; total_chunks; filename }));
+                        Debug.print(debug_show ({ content_type; content_encoding; total_chunks; filename }));
 
                         let file : File = {
                             content_type;
@@ -281,7 +286,10 @@ shared ({ caller = owner }) actor class () = this_canister {
                     };
                 };
 
+                Debug.print("accessed file");
+
                 let uploaded_chunk_ids = upload_chunks(batch_id, [_request.body]);
+                Debug.print("successfully uploaded chunk: " # debug_show { chunk_id; uploaded_chunk_ids });
 
                 file.chunk_ids.put(chunk_id, uploaded_chunk_ids[0]);
 
@@ -289,12 +297,11 @@ shared ({ caller = owner }) actor class () = this_canister {
 
             } else if (_request.method == "POST" and url.path.array[0] == "upload" and url.path.array[1] == "commit") {
                 let parts = url.path.array;
-                // Debug.print("committing: " # debug_show parts);
 
                 let batch_id = nat_from_text(parts[2]);
                 let ?filename = url.queryObj.get("filename");
 
-                // Debug.print("Commit Upload batch: " # debug_show batch_id);
+                Debug.print("commit request: " # debug_show (parts, { batch_id }));
 
                 let ?files_batch = Map.get(current_uploads, nhash, batch_id) else return response(404, "Batch not found");
                 let ?file = Map.get(files_batch, thash, filename) else return response(404, "File not found");
@@ -303,7 +310,7 @@ shared ({ caller = owner }) actor class () = this_canister {
 
                 if (Itertools.all(Map.vals(files_batch), func(file : File) : Bool { file.is_committed })) {
 
-                    // Debug.print("Committing batch: " # debug_show batch_id);
+                    Debug.print("Committing batch: " # debug_show batch_id);
                     await* commit_batch(batch_id);
                     await* update_homepage();
                 };
@@ -318,7 +325,7 @@ shared ({ caller = owner }) actor class () = this_canister {
 
                 switch (url.queryObj.get("content_encoding")) {
                     case (?content_encoding) {
-                        // Debug.print("Deleting asset content: " # debug_show { key; content_encoding });
+                        Debug.print("Deleting asset content: " # debug_show { key; content_encoding });
 
                         switch (assets.unset_asset_content(owner, { key; content_encoding })) {
                             case (#ok()) {};
@@ -329,7 +336,7 @@ shared ({ caller = owner }) actor class () = this_canister {
                         };
                     };
                     case (null) {
-                        // Debug.print("Deleting asset: " # debug_show key);
+                        Debug.print("Deleting asset: " # debug_show key);
                         switch (assets.delete_asset(owner, { key })) {
                             case (#ok()) {};
                             case (#err(msg)) {

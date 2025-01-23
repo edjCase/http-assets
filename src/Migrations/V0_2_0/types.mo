@@ -24,7 +24,7 @@ module {
 
     public type AssetEncoding = {
         var modified : Time;
-        var content_chunks : [[Nat8]];
+        var content_chunks : [Blob];
         var content_chunks_prefix_sum : [Nat];
 
         var total_length : Nat;
@@ -264,7 +264,7 @@ module {
     };
 
     public type StoredChunk = {
-        content : [Nat8];
+        content : Blob;
         batch_id : BatchId;
     };
 

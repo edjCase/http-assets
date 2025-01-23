@@ -1,7 +1,7 @@
 [package]
 name = "ic-assets"
 description = "A library implementation of the IC Assets Canister with v2 certification"
-version = "0.1.0"
+version = "0.2.0"
 repository = "https://github.com/NatLabs/ic-assets"
 license = "MIT"
 keywords = ["certified", "http", "request", "streaming"]
@@ -17,6 +17,7 @@ vector = "0.4.1"
 encoding = "https://github.com/aviate-labs/encoding.mo#v0.4.1@2711d18727e954b11afc0d37945608512b5fbce2"
 http-parser = "0.3.3"
 sha2 = "0.1.0"
+memory-region = "1.2.4"
 
 [dev-dependencies]
 test = "2.0.0"
@@ -28,3 +29,4 @@ deflate = "0.1.0"
 [toolchain]
 wasmtime = "15.0.0"
 moc = "0.13.2"
+pocket-ic = "4.0.0"
