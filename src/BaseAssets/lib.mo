@@ -86,7 +86,7 @@ module {
     };
 
     /// Handles HTTP request streaming callback.
-    public func http_request_streaming_callback(self : T.StableStore, token : T.StreamingToken) : T.Result<?T.StreamingCallbackResponse, Text> {
+    public func http_request_streaming_callback(self : T.StableStore, token : T.StreamingToken) : T.Result<T.StreamingCallbackResponse, Text> {
         Http.http_request_streaming_callback(self, token);
     };
 

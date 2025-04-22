@@ -211,7 +211,7 @@ module {
         ///
         /// assets.set_streaming_callback(ic_assets_streaming_callback);
         ///
-        public func http_request_streaming_callback(token : StreamingToken) : T.Result<?StreamingCallbackResponse, Text> {
+        public func http_request_streaming_callback(token : StreamingToken) : T.Result<StreamingCallbackResponse, Text> {
             BaseAssets.http_request_streaming_callback(state, token);
         };
 

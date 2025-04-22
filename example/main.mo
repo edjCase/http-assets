@@ -1,22 +1,15 @@
-import Cycles "mo:base/ExperimentalCycles";
-import Array "mo:base/Array";
 import Debug "mo:base/Debug";
 import Buffer "mo:base/Buffer";
 import Text "mo:base/Text";
 import Blob "mo:base/Blob";
-import Iter "mo:base/Iter";
-import Nat8 "mo:base/Nat8";
 import Nat32 "mo:base/Nat32";
 import Char "mo:base/Char";
-import Option "mo:base/Option";
 import Error "mo:base/Error";
 import Principal "mo:base/Principal";
-
+import Array "mo:base/Array";
 import Map "mo:map/Map";
-import Vector "mo:vector";
 import HttpParser "mo:http-parser";
 import Itertools "mo:itertools/Iter";
-// import Web "mo:web-io";
 
 import Assets "../src";
 import { get_fallback_page } "FallbackPage";
@@ -38,13 +31,11 @@ shared ({ caller = owner }) actor class () = this_canister {
     let current_uploads : Map<Nat, Map<Text, File>> = Map.new();
 
     let canister_id = Principal.fromActor(this_canister);
-    stable var assets_sstore : Any = ();
-    stable let assets_sstore_2 : Any = ();
     stable var assets_sstore_3 = Assets.init_stable_store(canister_id, owner);
 
     let assets = Assets.Assets(assets_sstore_3, null);
 
-    public query func http_request_streaming_callback(token : Assets.StreamingToken) : async (Assets.StreamingCallbackResponse) {
+    public query func http_request_streaming_callback(token : Assets.StreamingToken) : async Assets.StreamingCallbackResponse {
         switch (assets.http_request_streaming_callback(token)) {
             case (#ok(response)) response;
             case (#err(err)) throw Error.reject(err);

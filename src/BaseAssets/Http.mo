@@ -33,16 +33,16 @@ module {
     ) : T.Result<T.HttpResponse, Text> {
 
         let headers = Certs.build_headers(asset, encoding_name, encoding.sha256);
-        let first_token : T.CustomStreamingToken = {
+        let next_token : T.CustomStreamingToken = {
             key;
             content_encoding = encoding_name;
-            index = chunk_index;
+            index = chunk_index + 1;
             sha256 = ?encoding.sha256;
         };
 
         let ?callback : ?T.StreamingCallback = self.streaming_callback else return #err("Streaming callback not set");
         let streaming_strategy : T.StreamingStrategy = #Callback({
-            token = to_candid (first_token);
+            token = to_candid (next_token);
             callback;
         });
 
@@ -85,10 +85,19 @@ module {
         };
 
         let certified_headers_result = switch (opt_fallback_key) {
-            case (?fallback_key) {
-                CertifiedAssets.get_fallback_certificate(self.fs.certs, http_req, fallback_key, http_res, opt_body_hash);
-            };
-            case (null) CertifiedAssets.get_certificate(self.fs.certs, http_req, http_res, opt_body_hash);
+            case (?fallback_key) CertifiedAssets.get_fallback_certificate(
+                self.fs.certs,
+                http_req,
+                fallback_key,
+                http_res,
+                opt_body_hash,
+            );
+            case (null) CertifiedAssets.get_certificate(
+                self.fs.certs,
+                http_req,
+                http_res,
+                opt_body_hash,
+            );
         };
 
         switch (certified_headers_result) {
@@ -224,7 +233,7 @@ module {
 
     };
 
-    public func http_request_streaming_callback(self : T.StableStore, rawToken : T.StreamingToken) : T.Result<?T.StreamingCallbackResponse, Text> {
+    public func http_request_streaming_callback(self : T.StableStore, rawToken : T.StreamingToken) : T.Result<T.StreamingCallbackResponse, Text> {
         let ?t : ?T.CustomStreamingToken = from_candid (rawToken) else return #err("http_request_streaming_callback(): Invalid token");
         let token : T.CustomStreamingToken = {
             t with key = Utils.format_key(t.key)
@@ -232,7 +241,7 @@ module {
 
         let asset = switch (FileSystem.get_asset_using_aliases(self.fs, token.key, true)) {
             case (#ok(?asset)) asset;
-            case (#ok(null)) return #ok(null);
+            case (#ok(null)) return #err(ErrorMessages.asset_not_found(token.key));
             case (#err(msg)) return #err("http_request_streaming_callback(): " # msg);
         };
 
@@ -266,7 +275,7 @@ module {
             token = if (next_token.index < num_chunks) ?to_candid (next_token) else (null);
         };
 
-        #ok(?response);
+        #ok(response);
 
     };
 

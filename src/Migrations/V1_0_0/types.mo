@@ -374,7 +374,7 @@ module T {
         };
     };
 
-    public type StreamingCallback = shared query (StreamingToken) -> async ?StreamingCallbackResponse;
+    public type StreamingCallback = shared query (StreamingToken) -> async StreamingCallbackResponse;
     public type StreamingToken = Blob;
     public type CustomStreamingToken = {
         key : Key;
