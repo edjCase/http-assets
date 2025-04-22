@@ -1,29 +1,29 @@
 [package]
-name = "ic-assets"
+name = "http-assets"
 description = "A library implementation of the IC Assets Canister with v2 certification"
-version = "0.2.0"
-repository = "https://github.com/NatLabs/ic-assets"
+version = "0.0.1"
+repository = "https://github.com/edjcase/ic-assets"
 license = "MIT"
-keywords = ["certified", "http", "request", "streaming"]
+keywords = ["certified", "http", "request", "streaming", "assets"]
 
 [dependencies]
-base = "0.13.3"
+base = "0.14.8"
 http-types = "1.0.1"
 map = "9.0.1"
-certified-assets = "0.4.0"
+certified-assets = "0.5.1"
 ic = "2.0.0"
 itertools = "0.2.2"
 vector = "0.4.1"
 encoding = "https://github.com/aviate-labs/encoding.mo#v0.4.1@2711d18727e954b11afc0d37945608512b5fbce2"
-http-parser = "0.3.3"
-sha2 = "0.1.0"
+http-parser = "0.3.4"
+sha2 = "0.1.2"
 memory-region = "1.2.4"
 
 [dev-dependencies]
-test = "2.0.0"
+test = "2.1.1"
 bench = "1.0.0"
 fuzz = "0.2.1"
-serde = "3.1.0"
+serde = "3.2.2"
 deflate = "0.1.0"
 
 [toolchain]

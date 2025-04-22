@@ -45,7 +45,7 @@ shared ({ caller = owner }) actor class () = this_canister {
 
     public query func http_request_streaming_callback(
         token : Assets.StreamingToken
-    ) : async Assets.StreamingCallbackResponse {
+    ) : async ?Assets.StreamingCallbackResponse {
         switch (assets.http_request_streaming_callback(token)) {
             case (#ok(response)) response;
             case (#err(msg)) throw Error.reject(msg);

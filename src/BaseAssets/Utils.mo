@@ -26,7 +26,10 @@ module {
 
     public func format_key(key : Text) : Text {
         let url = HttpParser.URL(key, HttpParser.Headers([]));
-        return "/" # Text.join("/", url.path.array.vals());
+        let path = url.path.array.vals()
+        |> Iter.filter(_, func(x : Text) : Bool { x != "" })
+        |> Text.join("/", _);
+        "/" # path;
     };
 
     public func map_get_or_put<K, V>(map : Map<K, V>, hash_util : Map.HashUtils<K>, key : K, default : () -> V) : V {
