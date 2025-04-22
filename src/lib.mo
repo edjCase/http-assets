@@ -211,13 +211,18 @@ module {
         ///
         /// assets.set_streaming_callback(ic_assets_streaming_callback);
         ///
-        public func http_request_streaming_callback(token : StreamingToken) : T.Result<StreamingCallbackResponse, Text> {
+        public func http_request_streaming_callback(token : StreamingToken) : T.Result<?StreamingCallbackResponse, Text> {
             BaseAssets.http_request_streaming_callback(state, token);
         };
 
         /// This method points to the streaming callback function defined in the canister.
         public func set_streaming_callback(callback : StreamingCallback) {
             BaseAssets.set_streaming_callback(state, callback);
+        };
+
+        /// This method returns the streaming callback function defined in the canister.
+        public func get_streaming_callback() : ?StreamingCallback {
+            BaseAssets.get_streaming_callback(state);
         };
 
         /// Returns the certified tree for all the assets.

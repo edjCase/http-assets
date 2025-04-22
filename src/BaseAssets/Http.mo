@@ -33,16 +33,16 @@ module {
     ) : T.Result<T.HttpResponse, Text> {
 
         let headers = Certs.build_headers(asset, encoding_name, encoding.sha256);
-        let next_token : T.StreamingToken = {
+        let first_token : T.CustomStreamingToken = {
             key;
             content_encoding = encoding_name;
-            index = chunk_index + 1;
+            index = chunk_index;
             sha256 = ?encoding.sha256;
         };
 
         let ?callback : ?T.StreamingCallback = self.streaming_callback else return #err("Streaming callback not set");
         let streaming_strategy : T.StreamingStrategy = #Callback({
-            token = (next_token);
+            token = to_candid (first_token);
             callback;
         });
 
@@ -224,11 +224,15 @@ module {
 
     };
 
-    public func http_request_streaming_callback(self : T.StableStore, token : T.StreamingToken) : T.Result<T.StreamingCallbackResponse, Text> {
+    public func http_request_streaming_callback(self : T.StableStore, rawToken : T.StreamingToken) : T.Result<?T.StreamingCallbackResponse, Text> {
+        let ?t : ?T.CustomStreamingToken = from_candid (rawToken) else return #err("http_request_streaming_callback(): Invalid token");
+        let token : T.CustomStreamingToken = {
+            t with key = Utils.format_key(t.key)
+        };
 
         let asset = switch (FileSystem.get_asset_using_aliases(self.fs, token.key, true)) {
             case (#ok(?asset)) asset;
-            case (#ok(null)) return #err(ErrorMessages.asset_not_found(token.key));
+            case (#ok(null)) return #ok(null);
             case (#err(msg)) return #err("http_request_streaming_callback(): " # msg);
         };
 
@@ -259,10 +263,10 @@ module {
 
         let response : T.StreamingCallbackResponse = {
             body = chunk;
-            token = if (next_token.index < num_chunks) ?(next_token) else (null);
+            token = if (next_token.index < num_chunks) ?to_candid (next_token) else (null);
         };
 
-        #ok(response);
+        #ok(?response);
 
     };
 

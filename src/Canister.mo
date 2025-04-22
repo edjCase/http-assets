@@ -77,7 +77,7 @@ shared ({ caller = owner }) actor class AssetsCanister(canister_args : T.Caniste
 
     let assets = Assets.Assets(assets_sstore, opt_set_permissions);
 
-    public query func http_request_streaming_callback(token : T.StreamingToken) : async (T.StreamingCallbackResponse) {
+    public query func http_request_streaming_callback(token : T.StreamingToken) : async ?T.StreamingCallbackResponse {
         switch (assets.http_request_streaming_callback(token)) {
             case (#ok(response)) response;
             case (#err(err)) throw Error.reject(err);
