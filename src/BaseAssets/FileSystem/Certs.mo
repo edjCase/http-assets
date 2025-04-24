@@ -30,8 +30,8 @@ module Certs {
     };
 
     func get_cache_endpoint(key_or_alias : Text, encoding : T.AssetEncoding, headers_array : [(Text, Text)], is_aliased : Bool) : T.Endpoint {
-        // update the status code to '304 Not Modified'
-        get_success_endpoint(key_or_alias, encoding, headers_array, is_aliased).status(304);
+        // update the status code to '304 Not Modified' and remove the body since the content is not sent
+        get_success_endpoint(key_or_alias, encoding, headers_array, is_aliased).status(304).body("");
     };
 
     /// Builds the headers for the asset, combining the user-defined headers with the necessary headers for the asset's content and encoding.

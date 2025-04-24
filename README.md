@@ -31,10 +31,14 @@ This is the documentation for the assets canister implemented in Rust by the Dfi
         let canister_id  = Principal.fromActor(this_canister);
 
         stable let assets_sstore_1 = Assets.init_stable_store(canister_id, owner);
+        assets_sstore_1 := HttpAssets.upgrade_stable_store(assets_sstore_1);
         let assets = Assets.Assets(assets_sstore_1, null);
 
-        public query func http_request_streaming_callback(token : Assets.StreamingToken) : async ?(Assets.StreamingCallbackResponse) {
-            ?assets.http_request_streaming_callback(token);
+        public query func http_request_streaming_callback(token : Assets.StreamingToken) : async Assets.StreamingCallbackResponse {
+            switch (assetStore.http_request_streaming_callback(token)) {
+                case (#err(e)) throw Error.reject(e);
+                case (#ok(response)) response;
+            };
         };
 
         assets.set_streaming_callback(http_request_streaming_callback); // required

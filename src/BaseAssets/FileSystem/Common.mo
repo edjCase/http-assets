@@ -1,13 +1,7 @@
 import Text "mo:base/Text";
 import Iter "mo:base/Iter";
-import Result "mo:base/Result";
-import Buffer "mo:base/Buffer";
-import Debug "mo:base/Debug";
-
 import Itertools "mo:itertools/Iter";
 import Map "mo:map/Map";
-import MemoryRegion "mo:memory-region/MemoryRegion";
-import CertifiedAssets "mo:certified-assets/Stable";
 import RevIter "mo:itertools/RevIter";
 
 import T "../Types";

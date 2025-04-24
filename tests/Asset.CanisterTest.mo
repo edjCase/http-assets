@@ -38,7 +38,7 @@ shared ({ caller = owner }) actor class () = this_canister {
 
     // Set up the assets library
     let assets_sstore = Assets.init_stable_store(canister_id, owner);
-    let #v0_3_0(assets_internal) = assets_sstore else Debug.trap("Failed to extract stable store state with version #v0_3_0");
+    let #v1_0_0(assets_internal) = assets_sstore else Debug.trap("Failed to extract stable store state with version #v1_0_0");
 
     let assets = Assets.Assets(assets_sstore, null);
     assets.set_canister_id(canister_id);
@@ -2220,6 +2220,7 @@ shared ({ caller = owner }) actor class () = this_canister {
                     return ts_print("Error making http request: " # msg);
                 };
             };
+            Debug.print("Response: " # debug_show actual_http_response.headers);
 
             ts_assert_or_print(
                 actual_http_response.status_code == 200,
@@ -2228,6 +2229,57 @@ shared ({ caller = owner }) actor class () = this_canister {
 
             ts_assert_or_print(
                 actual_http_response.body == "👋 Hello, World!",
+                "[0xv9] Failed to match asset content (actual vs expected): " # debug_show (actual_http_response.body, "👋 Hello, World!"),
+            );
+
+            func tuple_equal(a : (Text, Text), b : (Text, Text)) : Bool {
+                (Text.toLowercase(a.0) == Text.toLowercase(b.0)) and (Text.toLowercase(a.1) == Text.toLowercase(b.1));
+            };
+
+            func tuple_key_equal(a : (Text, Text), b : (Text, Text)) : Bool {
+                Text.toLowercase(a.0) == Text.toLowercase(b.0);
+            };
+
+            ts_assert_or_print(
+                exists_in<(Text, Text)>(actual_http_response.headers, tuple_equal, ("content-type", "text/plain")),
+                "[0xva] Failed to match expected headers",
+            );
+
+            ts_assert_or_print(
+                exists_in<(Text, Text)>(actual_http_response.headers, tuple_key_equal, ("IC-Certificate", "")) and
+                exists_in<(Text, Text)>(actual_http_response.headers, tuple_key_equal, ("IC-CertificateExpression", "")),
+                "[0xvb] Missing certificate headers",
+            );
+        },
+    );
+
+    suite.add_query(
+        "retrieve asset with ETAG via http_request",
+        func({ ts_assert; ts_print; ts_assert_or_print } : CanisterTests.TestTools) : () {
+
+            let http_request : Assets.HttpRequest = {
+                method = "GET";
+                url = "/test/asset/hello";
+                headers = [("if-none-match", "\"d1a459c8309eb04f79f6c6decd7330f9ea6edeb84dffd7b5d38021223faf0902\"")];
+                body : Blob = "";
+                certificate_version = ?2;
+            };
+
+            let actual_http_response = switch (assets.http_request(http_request)) {
+                case (#ok(response)) response;
+                case (#err(msg)) {
+                    ts_assert(false);
+                    return ts_print("Error making http request: " # msg);
+                };
+            };
+
+            ts_assert_or_print(
+                actual_http_response.status_code == 304,
+                "[0xv8] Failed with status_code: " # debug_show actual_http_response.status_code,
+            );
+
+            ts_assert_or_print(
+                actual_http_response.body == "",
                 "[0xv9] Failed to match asset content (actual vs expected): " # debug_show (actual_http_response.body, "👋 Hello, World!"),
             );
 

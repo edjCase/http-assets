@@ -58,16 +58,15 @@ module {
             )
         );
 
-        let content_chunk : Blob = switch (Encoding.get_chunk(self.fs, encoding, chunk_index)) {
-            case (?content) content;
-            case (null) "";
-        };
-
-        assert content_chunk.size() <= 2 * (1024 ** 2);
-
         let (status_code, body, opt_body_hash) : (Nat16, Blob, ?Blob) = if (contains_hash) {
             (304, "", null);
         } else {
+            let content_chunk : Blob = switch (Encoding.get_chunk(self.fs, encoding, chunk_index)) {
+                case (?content) content;
+                case (null) "";
+            };
+
+            assert content_chunk.size() <= 2 * (1024 ** 2);
             (200, content_chunk, ?encoding.sha256);
         };
 
