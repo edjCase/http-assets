@@ -110,7 +110,7 @@ module {
 
                 let certified_res : T.HttpResponse = {
                     http_res with headers = Buffer.toArray(headers_buffer);
-                    streaming_strategy = if (num_chunks > 1) ?streaming_strategy else null;
+                    streaming_strategy = if (num_chunks > 1 and status_code != 304) ?streaming_strategy else null;
                 };
 
                 return #ok(certified_res);

@@ -1,7 +1,7 @@
 [package]
 name = "http-assets"
 description = "A library implementation of the IC Assets Canister with v2 certification"
-version = "0.0.4"
+version = "0.0.5"
 repository = "https://github.com/edjcase/ic-assets"
 license = "MIT"
 keywords = ["certified", "http", "request", "streaming", "assets"]
