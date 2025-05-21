@@ -41,7 +41,7 @@ module {
     };
 
     public func get_html_alias_root(fs : T.FileSystem, alias : Text) : ?Text {
-        if (not Text.endsWith(alias, #text ".html")) return null;
+        if (not Text.endsWith(alias, #text ".html")) return ?(alias # "index.html");
 
         let ?sans_html = Text.stripEnd(alias, #text ".html") else return null;
 
@@ -92,14 +92,20 @@ module {
     };
 
     public func get_html_file_aliases(fs : T.FileSystem, key : Text) : [Text] {
-        if (Text.endsWith(key, #text ".html")) return [];
-
-        // todo: check if the asset file is an html file
-
-        let aliases = [
-            join_paths([key, "index.html"]),
-            key # ".html",
-        ];
+        let aliases = if (Text.endsWith(key, #text("index.html"))) {
+            // /index.html -> /
+            [
+                Text.trimEnd(key, #text("index.html"))
+            ];
+        } else if (Text.endsWith(key, #text ".html")) {
+            return [];
+        } else {
+            // /test -> /test.html -> /test/index.html
+            [
+                join_paths([key, "index.html"]),
+                key # ".html",
+            ];
+        };
 
         // an alias cannot overwrite an existing asset
         Iter.toArray(
@@ -117,8 +123,7 @@ module {
     };
 
     public func get_fallback_asset(fs : T.FileSystem, key : Text) : ?(Text, T.Asset) {
-
-        let paths = Iter.toArray(Text.split(key, #text("/")));
+        let paths = if (key == "/")[""] else Iter.toArray(Text.split(key, #text("/")));
 
         for (i in RevIter.range(0, paths.size()).rev()) {
             let slice = Itertools.fromArraySlice(paths, 0, i + 1);
