@@ -63,7 +63,7 @@ module {
                     switch (Map.get(chunks, nhash, chunk_id)) {
                         case (?({ pointer = (chunk_address, chunk_size) })) {
                             let chunk = MemoryRegion.loadBlob(self.region, chunk_address, chunk_size);
-                            sha256.writeBlob(chunk);
+                            sha256.writeIter(chunk.vals());
                         };
                         case (_) {};
                     };
@@ -122,8 +122,8 @@ module {
 
     func hash_create_asset(sha256 : Sha256.Digest, args : T.CreateAssetArguments) {
         sha256.writeArray(TAG_CREATE_ASSET);
-        sha256.writeBlob(Text.encodeUtf8(args.key));
-        sha256.writeBlob(Text.encodeUtf8(args.content_type));
+        sha256.writeIter(Text.encodeUtf8(args.key).vals());
+        sha256.writeIter(Text.encodeUtf8(args.content_type).vals());
 
         switch (args.max_age) {
             case (?max_age) {
@@ -144,9 +144,9 @@ module {
 
     func hash_set_asset_content(sha256 : Sha256.Digest, args : T.SetAssetContentArguments) {
         sha256.writeArray(TAG_SET_ASSET_CONTENT);
-        sha256.writeBlob(Text.encodeUtf8(args.key));
-        sha256.writeBlob(Text.encodeUtf8(args.content_encoding));
-        hash_opt(sha256, args.sha256, func(_ : Sha256.Digest, blob : Blob) = sha256.writeBlob(blob));
+        sha256.writeIter(Text.encodeUtf8(args.key).vals());
+        sha256.writeIter(Text.encodeUtf8(args.content_encoding).vals());
+        hash_opt(sha256, args.sha256, func(_ : Sha256.Digest, blob : Blob) = sha256.writeIter(blob.vals()));
     };
 
     func hash_opt<A>(sha256 : Sha256.Digest, opt : ?A, hash_option_type : (Sha256.Digest, A) -> ()) {
@@ -191,8 +191,8 @@ module {
 
                 for (key in keys.vals()) {
                     let ?value = Map.get(headers, thash, key) else Debug.trap("hash_headers: key '" # key # "' not found in headers");
-                    sha256.writeBlob(Text.encodeUtf8(key));
-                    sha256.writeBlob(Text.encodeUtf8(value));
+                    sha256.writeIter(Text.encodeUtf8(key).vals());
+                    sha256.writeIter(Text.encodeUtf8(value).vals());
                 };
             };
             case (null) {
@@ -203,13 +203,13 @@ module {
 
     func hash_unset_asset_content(sha256 : Sha256.Digest, args : T.UnsetAssetContentArguments) {
         sha256.writeArray(TAG_UNSET_ASSET_CONTENT);
-        sha256.writeBlob(Text.encodeUtf8(args.key));
-        sha256.writeBlob(Text.encodeUtf8(args.content_encoding));
+        sha256.writeIter(Text.encodeUtf8(args.key).vals());
+        sha256.writeIter(Text.encodeUtf8(args.content_encoding).vals());
     };
 
     func hash_delete_asset(sha256 : Sha256.Digest, args : T.DeleteAssetArguments) {
         sha256.writeArray(TAG_DELETE_ASSET);
-        sha256.writeBlob(Text.encodeUtf8(args.key));
+        sha256.writeIter(Text.encodeUtf8(args.key).vals());
     };
 
     func hash_clear(sha256 : Sha256.Digest, args : T.ClearArguments) {
@@ -218,7 +218,7 @@ module {
 
     func hash_set_asset_properties(sha256 : Sha256.Digest, args : T.SetAssetPropertiesArguments) {
         sha256.writeArray(TAG_SET_ASSET_PROPERTIES);
-        sha256.writeBlob(Text.encodeUtf8(args.key));
+        sha256.writeIter(Text.encodeUtf8(args.key).vals());
 
         hash_opt(
             sha256,

@@ -537,7 +537,7 @@ module {
 
     func hash_bytes(sha256 : Sha256.Digest, chunks : Iter.Iter<Blob>) : async () {
         for (content in chunks) {
-            sha256.writeBlob(content);
+            sha256.writeIter(content.vals());
         };
     };
 
@@ -549,7 +549,7 @@ module {
         for ((chunk_address, chunk_size) in chunk_pointers.vals()) {
             let chunk = MemoryRegion.loadBlob(self.upload.region, chunk_address, chunk_size);
 
-            sha256.writeBlob(chunk);
+            sha256.writeIter(chunk.vals());
         };
 
         #ok();
