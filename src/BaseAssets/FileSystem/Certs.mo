@@ -4,7 +4,7 @@ import Blob "mo:base/Blob";
 import CertifiedAssets "mo:certified-assets/Stable";
 import Map "mo:map/Map";
 import Itertools "mo:itertools/Iter";
-import Hex "mo:encoding/Hex";
+import BaseX "mo:base-x-encoder";
 
 import T "../Types";
 import ErrorMessages "../ErrorMessages";
@@ -57,7 +57,7 @@ module Certs {
         ignore Map.put(headers, T.thash, "content-encoding", encoding_name);
         ignore Map.put(headers, T.thash, "vary", "accept-encoding");
 
-        let hex = Hex.encode(Blob.toArray(encoding_sha256));
+        let hex = BaseX.toHex(encoding_sha256.vals(), { isUpper = false; prefix = #none });
         let etag_value = "\"" # hex # "\"";
         ignore Map.put(headers, T.thash, "etag", etag_value);
 

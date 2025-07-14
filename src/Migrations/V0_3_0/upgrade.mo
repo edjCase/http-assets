@@ -19,7 +19,7 @@ import Map "mo:map/Map";
 import CertifiedAssets "mo:certified-assets/Stable";
 import SHA256 "mo:sha2/Sha256";
 import Vector "mo:vector";
-import Hex "mo:encoding/Hex";
+import BaseX "mo:base-x-encoder";
 import HttpParser "mo:http-parser";
 
 import V0_types "../V0/types";
@@ -311,7 +311,7 @@ module {
             ignore Map.put(headers, T.thash, "content-encoding", encoding_name);
             ignore Map.put(headers, T.thash, "vary", "accept-encoding");
 
-            let hex = Hex.encode(Blob.toArray(encoding_sha256));
+            let hex = BaseX.toHex(encoding_sha256.vals(), { isUpper = false; prefix = #none });
             let etag_value = "\"" # hex # "\"";
             ignore Map.put(headers, T.thash, "etag", etag_value);
 

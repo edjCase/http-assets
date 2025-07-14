@@ -7,7 +7,7 @@ import Buffer "mo:base/Buffer";
 import Principal "mo:base/Principal";
 
 import Map "mo:map/Map";
-import Hex "mo:encoding/Hex";
+import BaseX "mo:base-x-encoder";
 import CertifiedAssets "mo:certified-assets/Stable";
 import HttpParser "mo:http-parser";
 
@@ -52,7 +52,7 @@ module {
                 func(etag : Text) : Bool {
                     let unwrapped_etag = Text.replace(etag, #text("\""), "");
 
-                    let #ok(etag_bytes) = Hex.decode(unwrapped_etag) else return false;
+                    let #ok(etag_bytes) = BaseX.fromHex(unwrapped_etag, { prefix = #none }) else return false;
                     Blob.fromArray(etag_bytes) == encoding.sha256;
                 },
             )
