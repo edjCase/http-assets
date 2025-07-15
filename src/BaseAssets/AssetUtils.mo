@@ -549,7 +549,7 @@ module {
         for ((chunk_address, chunk_size) in chunk_pointers.vals()) {
             let chunk = MemoryRegion.loadBlob(self.upload.region, chunk_address, chunk_size);
 
-            sha256..writeBlob(chunk);
+            sha256.writeBlob(chunk);
         };
 
         #ok();
