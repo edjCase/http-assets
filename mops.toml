@@ -15,7 +15,7 @@ ic = "3.0.0"
 itertools = "0.2.2"
 vector = "0.4.2"
 http-parser = "0.3.4"
-sha2 = "0.1.4"
+sha2 = "0.1.5"
 memory-region = "1.2.4"
 base-x-encoder = "1.2.0"
 
